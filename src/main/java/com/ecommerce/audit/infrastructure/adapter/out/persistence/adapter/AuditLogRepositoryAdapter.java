@@ -43,7 +43,9 @@ public class AuditLogRepositoryAdapter implements AuditRepositoryPort {
         LocalDateTime finalFrom = from != null ? from : LocalDateTime.of(1970, 1, 1, 0, 0);
         LocalDateTime finalTo = to != null ? to : LocalDateTime.now().plusYears(10); // futuro lejano
 
-        return jpaRepository.findByCriteria(changeType, itemId, changedBy, finalFrom, finalTo, pageable)
+        return jpaRepository.findByCriteria(
+                changeType != null ? changeType.name() : null,
+                itemId, changedBy, finalFrom, finalTo, pageable)
                 .map(this::toDomain);
     }
 

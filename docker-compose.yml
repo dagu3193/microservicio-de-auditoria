@@ -1,0 +1,67 @@
+services:
+
+  audit-postgres:
+    image: postgres:15-alpine
+    container_name: audit-postgres
+    environment:
+      POSTGRES_DB: audit_db
+      POSTGRES_USER: audit_user
+      POSTGRES_PASSWORD: audit_pass
+    volumes:
+      - audit_postgres_data:/var/lib/postgresql/data
+    networks:
+      - audit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit_user -d audit_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  audit-rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: audit-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    networks:
+      - audit-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  audit-service:
+    build: .
+    container_name: audit-service
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      DB_HOST: audit-postgres
+      DB_PORT: 5432
+      DB_NAME: audit_db
+      DB_USER: audit_user
+      DB_PASSWORD: audit_pass
+      RABBITMQ_HOST: audit-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_VHOST: /
+    depends_on:
+      audit-postgres:
+        condition: service_healthy
+      audit-rabbitmq:
+        condition: service_healthy
+    networks:
+      - audit-network
+
+volumes:
+  audit_postgres_data:
+
+networks:
+  audit-network:
+    driver: bridge

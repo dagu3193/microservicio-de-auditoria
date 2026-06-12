@@ -1,6 +1,5 @@
 package com.ecommerce.audit.infrastructure.adapter.out.persistence.repository;
 
-import com.ecommerce.audit.domain.model.AuditType;
 import com.ecommerce.audit.infrastructure.adapter.out.persistence.entity.AuditLogEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,16 +21,24 @@ public interface AuditLogJpaRepository extends JpaRepository<AuditLogEntity, UUI
      * Busca registros de auditoría filtrando de manera opcional por tipo de cambio, id del item,
      * responsable del cambio (búsqueda parcial) y rango de fechas.
      */
-    @Query("""
-            SELECT a FROM AuditLogEntity a
-            WHERE (:changeType IS NULL OR a.changeType = :changeType)
-              AND (:itemId IS NULL OR a.itemId = :itemId)
-              AND (:changedBy IS NULL OR LOWER(a.changedBy) LIKE LOWER(CONCAT('%', :changedBy, '%')))
-              AND (a.changedAt BETWEEN :from AND :to)
-            ORDER BY a.changedAt DESC
-            """)
+    @Query(value = """
+            SELECT * FROM audit_logs a
+            WHERE (:changeType IS NULL OR a.change_type = :changeType)
+              AND (:itemId IS NULL OR a.item_id = :itemId)
+              AND (:changedBy IS NULL OR LOWER(a.changed_by) LIKE LOWER(CONCAT('%', :changedBy, '%')))
+              AND (a.changed_at BETWEEN :from AND :to)
+            ORDER BY a.changed_at DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM audit_logs a
+            WHERE (:changeType IS NULL OR a.change_type = :changeType)
+              AND (:itemId IS NULL OR a.item_id = :itemId)
+              AND (:changedBy IS NULL OR LOWER(a.changed_by) LIKE LOWER(CONCAT('%', :changedBy, '%')))
+              AND (a.changed_at BETWEEN :from AND :to)
+            """,
+            nativeQuery = true)
     Page<AuditLogEntity> findByCriteria(
-            @Param("changeType") AuditType changeType,
+            @Param("changeType") String changeType,
             @Param("itemId") String itemId,
             @Param("changedBy") String changedBy,
             @Param("from") LocalDateTime from,
